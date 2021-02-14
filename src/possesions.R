@@ -1,7 +1,13 @@
 library(tidyverse)
 library(ggrepel)
+library(ggplot2)
+library(jpeg)
+library(grid)
 
 pbp <- read.csv("source_data/hackathon_nwhl.csv")
+img <- readJPEG("img/rink.jpg")
+event_colours <- data.frame(event_type = c("Shot", "Goal"),
+                            colour = c("#0000ff", "#00ff00"))
 
 augmented_pbp <- pbp %>%
   group_by(game_date, Home.Team, Away.Team) %>%
@@ -36,6 +42,23 @@ turnovers <- augmented_pbp %>%
   filter(Event == 'Incomplete Play') %>%
   filter(next_pos_first_event != 'Faceoff Win') %>%
   select(Clock, Home.Team.Skaters, Away.Team.Skaters, Event, X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2, Detail.1, next_pos_result) %>%
-  filter(Detail.1 == 'Direct')
+  filter(Detail.1 == 'Direct') %>%
+  filter(next_pos_result == 'Goal' | next_pos_result == 'Shot') %>%
+  left_join(event_colours, by = c('Event' = 'event_type'))
 
 View(turnovers)
+
+ggplot(data = turnovers, aes(x = X.Coordinate, y = Y.Coordinate)) +
+  annotation_custom(rasterGrob(img, width = unit(1, "npc"), height = unit(1, "npc")),
+                    -Inf, Inf, -Inf, Inf) +
+  labs(x = "", y = "", title = "Turnovers on incomplete direct passes which gave up shots",
+       caption = "Data: https://www.stathletes.com/big-data-cup/") +
+  xlim(0, 200) +
+  ylim(0, 85) +
+  geom_segment(color = '#992222',
+               aes(
+                 xend = X.Coordinate.2,
+                 yend = Y.Coordinate.2
+               ),
+               arrow = arrow(length = unit(0.3, "cm"))
+  )
