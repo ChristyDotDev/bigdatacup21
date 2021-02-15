@@ -38,7 +38,6 @@ augmented_pbp <- pbp %>%
   ungroup()
 
 turnovers <- augmented_pbp %>%
-  filter(pos_result == 'Incomplete Play') %>%
   filter(Event == 'Incomplete Play') %>%
   filter(next_pos_first_event != 'Faceoff Win') %>%
   select(Clock, Home.Team.Skaters, Away.Team.Skaters, Event, X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2, Detail.1, next_pos_result) %>%
@@ -51,7 +50,7 @@ View(turnovers)
 ggplot(data = turnovers, aes(x = X.Coordinate, y = Y.Coordinate)) +
   annotation_custom(rasterGrob(img, width = unit(1, "npc"), height = unit(1, "npc")),
                     -Inf, Inf, -Inf, Inf) +
-  labs(x = "", y = "", title = "Turnovers on incomplete direct passes which gave up shots",
+  labs(x = "", y = "", title = "Turnovers on direct passes which gave up shots",
        caption = "Data: https://www.stathletes.com/big-data-cup/") +
   xlim(0, 200) +
   ylim(0, 85) +
