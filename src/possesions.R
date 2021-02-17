@@ -3,8 +3,13 @@ library(ggrepel)
 library(ggplot2)
 library(jpeg)
 library(grid)
+library(reticulate)
 
-pbp <- read.csv("source_data/hackathon_nwhl.csv")
+source_python('src/pass_angle.py')
+
+pbp_all <- list.files(path = "./source_data/", pattern = "*.csv", full.names = T) %>%
+  map_df(~read_csv(., col_types = cols(.default = "c")))
+
 img <- readJPEG("img/rink.jpg")
 event_colours <- data.frame(event_type = c("Shot", "Goal"),
                             colour = c("#0000ff", "#00ff00"))
@@ -43,7 +48,8 @@ turnovers <- augmented_pbp %>%
   select(Clock, Home.Team.Skaters, Away.Team.Skaters, Event, X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2, Detail.1, next_pos_result) %>%
   filter(Detail.1 == 'Direct') %>%
   filter(next_pos_result == 'Goal' | next_pos_result == 'Shot') %>%
-  left_join(event_colours, by = c('Event' = 'event_type'))
+  left_join(event_colours, by = c('Event' = 'event_type')) %>%
+  mutate(pass_bearing = angle_between(X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2))
 
 View(turnovers)
 
