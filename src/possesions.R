@@ -7,8 +7,9 @@ library(reticulate)
 
 source_python('src/pass_angle.py')
 
-pbp_all <- list.files(path = "./source_data/", pattern = "*.csv", full.names = T) %>%
-  map_df(~read_csv(., col_types = cols(.default = "c")))
+#pbp <- list.files(path = "./source_data/", pattern = "*.csv", full.names = T) %>%
+#  map_df(~read_csv(.))
+pbp <- read.csv("source_data/hackathon_nwhl.csv")
 
 img <- readJPEG("img/rink.jpg")
 event_colours <- data.frame(event_type = c("Shot", "Goal"),
@@ -42,18 +43,22 @@ augmented_pbp <- pbp %>%
   mutate(next_pos_first_event = last(next_event_pos_first_event)) %>%
   ungroup()
 
+View(augmented_pbp)
+
 turnovers <- augmented_pbp %>%
   filter(Event == 'Incomplete Play') %>%
   filter(next_pos_first_event != 'Faceoff Win') %>%
   select(Clock, Home.Team.Skaters, Away.Team.Skaters, Event, X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2, Detail.1, next_pos_result) %>%
   filter(Detail.1 == 'Direct') %>%
-  filter(next_pos_result == 'Goal' | next_pos_result == 'Shot') %>%
-  left_join(event_colours, by = c('Event' = 'event_type')) %>%
   mutate(pass_bearing = angle_between(X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2))
+
+turnover_leading_to_shot <- turnovers %>%
+  filter(next_pos_result == 'Goal' | next_pos_result == 'Shot') %>%
+  left_join(event_colours, by = c('Event' = 'event_type'))
 
 View(turnovers)
 
-ggplot(data = turnovers, aes(x = X.Coordinate, y = Y.Coordinate)) +
+ggplot(data = turnover_leading_to_shot, aes(x = X.Coordinate, y = Y.Coordinate)) +
   annotation_custom(rasterGrob(img, width = unit(1, "npc"), height = unit(1, "npc")),
                     -Inf, Inf, -Inf, Inf) +
   labs(x = "", y = "", title = "Turnovers on direct passes which gave up shots",
