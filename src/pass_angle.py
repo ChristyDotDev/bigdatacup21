@@ -1,12 +1,14 @@
-from math import atan2, degrees
+from math import atan2, degrees, cos, sin, radians
 
 
-def angle_between(x1, y1, x2, y2):
+def angle_between(long1, lat1, long2, lat2):
     result = []
-    for i in range(len(x1)):
-        xdiff = x1[i] - x2[i]
-        ydiff = y1[i] - y2[i]
-        angle_rads = atan2(y2[i] - xdiff, x2[i] - ydiff)
-        angle_deg = degrees(angle_rads)
-        result.append(round(angle_deg,2))
+    for i in range(len(lat1)):
+        dLon = (long2[i] - long1[i])
+        x = cos(radians(lat2[i])) * sin(radians(dLon))
+        y = cos(radians(lat1[i])) * sin(radians(lat2[i])) - sin(radians(lat1[i])) * cos(radians(lat2[i])) * cos(
+            radians(dLon))
+        rads = atan2(x, y)
+        degs = degrees(rads)
+        result.append(round(degs, 0))
     return result

@@ -45,34 +45,27 @@ augmented_pbp <- pbp %>%
   ungroup()
 
 passes <- augmented_pbp %>%
-  filter(Event == 'Incomplete Play' | Event=='Play') %>%
+  filter(Event == 'Incomplete Play') %>%
+  filter(next_pos_first_event != 'Faceoff Win') %>%
   select(Clock, Home.Team.Skaters, Away.Team.Skaters, Event, X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2, Detail.1, next_pos_result) %>%
   filter(Detail.1 == 'Direct') %>%
-  # bearing relative to the y axis
-  mutate(pass_bearing = angle_between(X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2)) %>%
-  # face the goal, which is to the right of the x axis in this case
-  mutate(bearing_relative_to_goal = ifelse(pass_bearing-90<0, pass_bearing+270, pass_bearing-90))
+  mutate(pass_bearing = angle_between(X.Coordinate, Y.Coordinate, X.Coordinate.2, Y.Coordinate.2))
 
-View(passes)
+turnover_leading_to_shot <- turnovers %>%
+  filter(next_pos_result == 'Goal' | next_pos_result == 'Shot') %>%
+  left_join(event_colours, by = c('Event' = 'event_type'))
 
-turnover_by_angle <- passes %>%
-  group_by(bearing_relative_to_goal) %>%
-  mutate(passes=n(), turnover_rate = ifelse(Event== 'Incomplete Play', 1,0)/n()*100)
-
-View(turnover_by_angle)
-
-#TODO - graph turnover rate by angle of pass
-# Make the plot
-graph <- ggplot(turnover_by_angle, aes(x=as.factor(bearing_relative_to_goal), y=turnover_rate)) +
-  geom_bar(stat="identity", fill=alpha("blue", 0.3)) +
-  ylim(-20,100) +
-  theme_minimal() +
-  theme(
-    axis.text = element_blank(),
-    axis.title = element_blank(),
-    panel.grid = element_blank(),
-    plot.margin = unit(rep(-2,4), "cm")
-  ) +
-  coord_polar(start = 0)
-
-View(graph)
+ggplot(data = turnover_leading_to_shot, aes(x = X.Coordinate, y = Y.Coordinate)) +
+  annotation_custom(rasterGrob(img, width = unit(1, "npc"), height = unit(1, "npc")),
+                    -Inf, Inf, -Inf, Inf) +
+  labs(x = "", y = "", title = "Turnovers on direct passes which gave up shots",
+       caption = "Data: https://www.stathletes.com/big-data-cup/") +
+  xlim(0, 200) +
+  ylim(0, 85) +
+  geom_segment(color = '#992222',
+               aes(
+                 xend = X.Coordinate.2,
+                 yend = Y.Coordinate.2
+               ),
+               arrow = arrow(length = unit(0.3, "cm"))
+  )
